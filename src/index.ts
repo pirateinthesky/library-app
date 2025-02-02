@@ -1,22 +1,17 @@
 import express from "express";
-import { AppDataSource } from "./data-source";
-import bookRoutes from "./routes/bookRoutes";
+import { BookRouter } from "./BookRouter";
 
 const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// Veritabanı bağlantısını başlatıyoruz
-AppDataSource.initialize()
-    .then(() => {
-        console.log("Database connected");
+// BookRouter sınıfından bir örnek oluşturuyoruz
+const bookRoutes = new BookRouter();
 
-        // /api/books endpoint'ini tanımlıyoruz
-        app.use("/api/books", bookRoutes);
+// Oluşturduğumuz router'ı /api/books yolunda kullanıyoruz
+app.use("/api/books", bookRoutes.router);
 
-        app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
-        });
-    })
-    .catch((error) => console.log("Error during Data Source initialization", error));
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
