@@ -23,13 +23,14 @@ export class BookRouter {
 
   private createBook = async (req: Request, res: Response) => {
     try {
-      // Basit id üretimi: mevcut kitap sayısına göre id belirliyoruz.
-      // Gerçek uygulamada, id üretimi için daha sağlam bir yöntem kullanılabilir.
+      // Basit id üretimi: Mevcut kitap sayısına göre id belirleniyor.
+      // Gerçek uygulamada, id üretimi için daha sağlam bir yöntem kullanılmalıdır.
       const books = await this.bookService.getAllBooks();
       const newBook: Book = {
         id: books.length + 1,
         title: req.body.title,
-        author: req.body.author,
+        // Burada client'dan gelen 'author' değerini 'authorId' olarak atıyoruz.
+        authorId: req.body.author,
         description: req.body.description,
       };
       const created = await this.bookService.createBook(newBook);
@@ -42,7 +43,9 @@ export class BookRouter {
 
   private getAllBooks = async (req: Request, res: Response) => {
     try {
-      const books = await this.bookService.getAllBooks();
+      const sort = req.query.sort ? req.query.sort.toString() : undefined;
+      const order = req.query.order ? req.query.order.toString() : undefined;
+      const books = await this.bookService.getAllBooks(sort, order);
       res.json(books);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -68,7 +71,12 @@ export class BookRouter {
   private updateBook = async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const updated = await this.bookService.updateBook(id, req.body);
+      // Güncelleme yapılırken, client'dan gelen author değerini 'authorId' olarak gönderiyoruz.
+      const updated = await this.bookService.updateBook(id, {
+        title: req.body.title,
+        authorId: req.body.author,
+        description: req.body.description,
+      });
       if (!updated) {
         res.status(404).json({ error: "Book not found" });
       } else {

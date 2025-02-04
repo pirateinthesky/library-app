@@ -8,12 +8,12 @@ export class BookService {
     const session = driver.session();
     try {
       const result = await session.run(
-        `CREATE (b:Book {id: $id, title: $title, author: $author, description: $description})
+        `CREATE (b:Book {id: $id, title: $title, authorId: $authorId, description: $description})
          RETURN b`,
         {
-          id: book.id.toString(), // Neo4j'de id'yi string olarak saklamak tercih edilebilir
+          id: book.id.toString(),
           title: book.title,
-          author: book.author,
+          authorId: book.authorId ? book.authorId.toString() : null,
           description: book.description || null,
         }
       );
@@ -22,7 +22,7 @@ export class BookService {
       return {
         id: parseInt(node.id),
         title: node.title,
-        author: node.author,
+        authorId: node.authorId ? parseInt(node.authorId) : undefined,
         description: node.description,
       };
     } finally {
@@ -34,27 +34,22 @@ export class BookService {
   async getAllBooks(sortField?: string, order?: string): Promise<Book[]> {
     const session = driver.session();
     try {
-      // Varsayılan sorgu: tüm Book düğümlerini getir
       let query = "MATCH (b:Book) RETURN b";
-      
-      // Eğer sıralama alanı belirtilmişse, sorguya ORDER BY ekleyelim
       if (sortField) {
-        // Sadece "id" veya "title" alanlarına izin veriyoruz
-        const allowedFields = ["id", "title"];
-        if (allowedFields.includes(sortField)) {
-          // Sıralama yönünü belirleyelim: varsayılan "asc" (artan), aksi halde "desc"
+        // Sadece "id", "title" veya "authorId" alanlarına izin verelim
+        const allowedFields = ["id", "title", "authorid"];
+        if (allowedFields.includes(sortField.toLowerCase())) {
           const orderClause = order && order.toLowerCase() === "desc" ? "DESC" : "ASC";
           query = `MATCH (b:Book) RETURN b ORDER BY b.${sortField} ${orderClause}`;
         }
       }
-      
       const result = await session.run(query);
       return result.records.map(record => {
         const node = record.get("b").properties;
         return {
           id: parseInt(node.id),
           title: node.title,
-          author: node.author,
+          authorId: node.authorId ? parseInt(node.authorId) : undefined,
           description: node.description,
         };
       });
@@ -76,7 +71,7 @@ export class BookService {
       return {
         id: parseInt(node.id),
         title: node.title,
-        author: node.author,
+        authorId: node.authorId ? parseInt(node.authorId) : undefined,
         description: node.description,
       };
     } finally {
@@ -91,13 +86,13 @@ export class BookService {
       const result = await session.run(
         `MATCH (b:Book {id: $id})
          SET b.title = COALESCE($title, b.title),
-             b.author = COALESCE($author, b.author),
+             b.authorId = COALESCE($authorId, b.authorId),
              b.description = COALESCE($description, b.description)
          RETURN b`,
         {
           id: id.toString(),
           title: book.title,
-          author: book.author,
+          authorId: book.authorId ? book.authorId.toString() : null,
           description: book.description,
         }
       );
@@ -106,7 +101,7 @@ export class BookService {
       return {
         id: parseInt(node.id),
         title: node.title,
-        author: node.author,
+        authorId: node.authorId ? parseInt(node.authorId) : undefined,
         description: node.description,
       };
     } finally {
