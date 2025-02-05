@@ -14,8 +14,13 @@ export class BookRouter {
   }
 
   private initializeRoutes() {
+    // Önce sabit route'ları tanımlayın:
+    this.router.get("/borrowed", this.getBorrowedRelationships);
+    
+    // Diğer CRUD endpoint'leri:
     this.router.post("/", this.createBook);
     this.router.get("/", this.getAllBooks);
+    // Dinamik route'lar; bunlar sabit route'ların altında tanımlanmalıdır
     this.router.get("/:id", this.getBookById);
     this.router.put("/:id", this.updateBook);
     this.router.delete("/:id", this.deleteBook);
@@ -23,15 +28,14 @@ export class BookRouter {
 
   private createBook = async (req: Request, res: Response) => {
     try {
-      // Basit id üretimi: Mevcut kitap sayısına göre id belirleniyor.
-      // Gerçek uygulamada, id üretimi için daha sağlam bir yöntem kullanılmalıdır.
       const books = await this.bookService.getAllBooks();
       const newBook: Book = {
         id: books.length + 1,
         title: req.body.title,
-        // Burada client'dan gelen 'author' değerini 'authorId' olarak atıyoruz.
-        authorId: req.body.author,
+        authorId: req.body.author, // Client'dan gelen "author" değeri authorId olarak atanıyor.
         description: req.body.description,
+        addedAt: req.body.addedAt,
+        status: req.body.status,
       };
       const created = await this.bookService.createBook(newBook);
       res.status(201).json(created);
@@ -42,16 +46,20 @@ export class BookRouter {
   };
 
   private getAllBooks = async (req: Request, res: Response) => {
-    try {
-      const sort = req.query.sort ? req.query.sort.toString() : undefined;
-      const order = req.query.order ? req.query.order.toString() : undefined;
-      const books = await this.bookService.getAllBooks(sort, order);
-      res.json(books);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({ error: message });
-    }
-  };
+  try {
+    const sort = req.query.sort ? req.query.sort.toString() : undefined;
+    const order = req.query.order ? req.query.order.toString() : undefined;
+    const startDate = req.query.startDate ? req.query.startDate.toString() : undefined;
+    const endDate = req.query.endDate ? req.query.endDate.toString() : undefined;
+    const status = req.query.status ? req.query.status.toString() : undefined;
+    const addedAt = req.query.addedAt ? req.query.addedAt.toString() : undefined;
+    const books = await this.bookService.getAllBooks(sort, order, startDate, endDate, status, addedAt);
+    res.json(books);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    res.status(500).json({ error: message });
+  }
+};
 
   private getBookById = async (req: Request, res: Response) => {
     try {
@@ -71,11 +79,12 @@ export class BookRouter {
   private updateBook = async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      // Güncelleme yapılırken, client'dan gelen author değerini 'authorId' olarak gönderiyoruz.
       const updated = await this.bookService.updateBook(id, {
         title: req.body.title,
         authorId: req.body.author,
         description: req.body.description,
+        addedAt: req.body.addedAt,
+        status: req.body.status
       });
       if (!updated) {
         res.status(404).json({ error: "Book not found" });
@@ -97,6 +106,16 @@ export class BookRouter {
       } else {
         res.json({ message: "Book deleted successfully" });
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: message });
+    }
+  };
+
+  private getBorrowedRelationships = async (req: Request, res: Response) => {
+    try {
+      const data = await this.bookService.getBorrowedRelationships();
+      res.json(data);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       res.status(500).json({ error: message });

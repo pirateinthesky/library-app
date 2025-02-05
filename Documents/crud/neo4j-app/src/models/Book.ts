@@ -4,4 +4,6 @@ export interface Book {
   authorId?: number;
   description?: string;
   volume?: number;
+  addedAt: string;
+  status: string;
 }
