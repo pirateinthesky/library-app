@@ -1,12 +1,17 @@
-// src/config/database.ts
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-export const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect("mongodb://localhost:27017/library_db");
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error("MongoDB bağlantı hatası:", error);
-    process.exit(1);
-  }
-};
+dotenv.config();
+
+const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/mydb";
+
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log("✅ MongoDB Bağlantısı Başarılı!");
+}).catch(err => {
+  console.error("❌ MongoDB Bağlantı Hatası:", err);
+});
+
+export default mongoose;
